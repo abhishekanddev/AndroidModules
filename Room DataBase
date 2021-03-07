@@ -1,1 +1,93 @@
+Step 1
+build.gradle(App)
+Dependency-
+ def room_version = "2.2.6"
+
+    implementation "androidx.room:room-runtime:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+    
+    
+Apply plugin-
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'kotlin-kapt'
+    id 'kotlin-android-extensions'
+}
+
+build.gradle(Project)
+Repositories{
+ maven {url 'https://maven.google.com'}
+}
+
+
+Step2
+Create model class 
+examle-Product
+
+@Entity(tableName= "product_table")
+data class Product(
+    @PrimaryKey(autoGenerate = false) var pName: String,
+    var pPrice: String,
+    var pImageUrl: String
+)
+
+Step 3
+A DAO class
+interface ProductDAO {
+
+    @Insert
+    fun insert(product: Product)
+
+    @Query("select * from product_table order by pName")
+    fun getAllProduct(): LiveData<ArrayList<Product>>
+}
+
+Step5
+
+abstract class ProductDataBase : RoomDatabase() {
+
+    abstract fun productDao(): ProductDAO
+
+    companion object {
+        private var instance: ProductDataBase? = null
+
+        @Synchronized
+        fun getInstance(ctx: Context): ProductDataBase {
+            if (instance == null) {
+
+                instance = Room.databaseBuilder(
+                    ctx.applicationContext,
+                    ProductDataBase::class.java,
+                    "product_database"
+                )
+                    .fallbackToDestructiveMigration()
+                    .addCallback(roomCallback)
+                    .allowMainThreadQueries()
+                    .build()
+
+            }
+            return instance!!
+        }
+
+        private val roomCallback = object : Callback() {
+            override fun onCreate(db: SupportSQLiteDatabase) {
+                super.onCreate(db)
+                populateDatabase(instance!!)
+            }
+
+            private fun populateDatabase(db: ProductDataBase) {
+                val noteDao = db.productDao()
+
+                noteDao.insert(Product("title 1", "desc 1", "f"))
+                noteDao.insert(Product("title 2", "desc 2", "f"))
+                noteDao.insert(Product("title 3", "desc 3", ""))
+
+            }
+
+        }
+    }
+
+
+}
 
